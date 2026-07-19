@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predictor de Ingresos</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 30px; color: #e94560; font-size: 1.8rem; }
+        .card { background: #16213e; border-radius: 12px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; margin-bottom: 6px; font-weight: 600; color: #a0a0a0; font-size: 0.9rem; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #0f3460; border-radius: 8px; background: #1a1a2e; color: #eee; font-size: 1rem; }
+        select:focus, input:focus { outline: none; border-color: #e94560; }
+        button { width: 100%; padding: 14px; background: #e94560; color: white; border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700; cursor: pointer; margin-top: 10px; transition: background 0.3s; }
+        button:hover { background: #c73550; }
+        .result { margin-top: 25px; padding: 20px; border-radius: 10px; text-align: center; font-size: 1.1rem; line-height: 1.6; }
+        .result.high { background: #0f5132; border: 2px solid #198754; }
+        .result.low { background: #58151c; border: 2px solid #dc3545; }
+        .subtitle { text-align: center; color: #a0a0a0; margin-bottom: 25px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Predictor de Ingresos Anuales</h1>
+        <p class="subtitle">Basado en datos del Censo de EE.UU. - Modelo KNN</p>
+        
+        <div class="card">
+            <form action="/predict" method="POST">
+                <div class="form-group">
+                    <label>Edad</label>
+                    <input type="number" name="age" min="17" max="90" value="{{ age if age else 25 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Educacion</label>
+                    <select name="education" required>
+                        <option value="Bachelors" {{ 'selected' if education == 'Bachelors' }}>Bachelors (Universitario)</option>
+                        <option value="Some-college" {{ 'selected' if education == 'Some-college' }}>Some-college (Algo de universidad)</option>
+                        <option value="HS-grad" {{ 'selected' if education == 'HS-grad' }}>HS-grad (Secundaria completa)</option>
+                        <option value="Masters" {{ 'selected' if education == 'Masters' }}>Masters (Maestria)</option>
+                        <option value="Doctorate" {{ 'selected' if education == 'Doctorate' }}>Doctorate (Doctorado)</option>
+                        <option value="Prof-school" {{ 'selected' if education == 'Prof-school' }}>Prof-school (Escuela profesional)</option>
+                        <option value="Assoc-voc" {{ 'selected' if education == 'Assoc-voc' }}>Assoc-voc (Asociado vocacional)</option>
+                        <option value="Assoc-acdm" {{ 'selected' if education == 'Assoc-acdm' }}>Assoc-acdm (Asociado academico)</option>
+                        <option value="11th" {{ 'selected' if education == '11th' }}>11th (11no grado)</option>
+                        <option value="10th" {{ 'selected' if education == '10th' }}>10th (10mo grado)</option>
+                        <option value="9th" {{ 'selected' if education == '9th' }}>9th (9no grado)</option>
+                        <option value="12th" {{ 'selected' if education == '12th' }}>12th (12no grado)</option>
+                        <option value="7th-8th" {{ 'selected' if education == '7th-8th' }}>7th-8th (7mo-8vo grado)</option>
+                        <option value="5th-6th" {{ 'selected' if education == '5th-6th' }}>5th-6th (5to-6to grado)</option>
+                        <option value="1st-4th" {{ 'selected' if education == '1st-4th' }}>1st-4th (1ro-4to grado)</option>
+                        <option value="Preschool" {{ 'selected' if education == 'Preschool' }}>Preschool (Preescolar)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado Civil</label>
+                    <select name="marital_status" required>
+                        <option value="Never-married" {{ 'selected' if marital_status == 'Never-married' }}>Soltero/a</option>
+                        <option value="Married-civ-spouse" {{ 'selected' if marital_status == 'Married-civ-spouse' }}>Casado/a (civil)</option>
+                        <option value="Divorced" {{ 'selected' if marital_status == 'Divorced' }}>Divorciado/a</option>
+                        <option value="Separated" {{ 'selected' if marital_status == 'Separated' }}>Separado/a</option>
+                        <option value="Widowed" {{ 'selected' if marital_status == 'Widowed' }}>Viudo/a</option>
+                        <option value="Married-spouse-absent" {{ 'selected' if marital_status == 'Married-spouse-absent' }}>Casado/a (conyuge ausente)</option>
+                        <option value="Married-AF-spouse" {{ 'selected' if marital_status == 'Married-AF-spouse' }}>Casado/a (fuerzas armadas)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Ocupacion</label>
+                    <select name="occupation" required>
+                        <option value="Prof-specialty" {{ 'selected' if occupation == 'Prof-specialty' }}>Profesional especializado</option>
+                        <option value="Craft-repair" {{ 'selected' if occupation == 'Craft-repair' }}>Artesano/Reparaciones</option>
+                        <option value="Exec-managerial" {{ 'selected' if occupation == 'Exec-managerial' }}>Ejecutivo/Gerente</option>
+                        <option value="Adm-clerical" {{ 'selected' if occupation == 'Adm-clerical' }}>Administrativo/Oficina</option>
+                        <option value="Sales" {{ 'selected' if occupation == 'Sales' }}>Ventas</option>
+                        <option value="Other-service" {{ 'selected' if occupation == 'Other-service' }}>Otros servicios</option>
+                        <option value="Machine-op-inspct" {{ 'selected' if occupation == 'Machine-op-inspct' }}>Operador de maquinaria</option>
+                        <option value="Transport-moving" {{ 'selected' if occupation == 'Transport-moving' }}>Transporte/Mudanza</option>
+                        <option value="Handlers-cleaners" {{ 'selected' if occupation == 'Handlers-cleaners' }}>Manipuladores/Limpieza</option>
+                        <option value="Farming-fishing" {{ 'selected' if occupation == 'Farming-fishing' }}>Agricultura/Pesca</option>
+                        <option value="Tech-support" {{ 'selected' if occupation == 'Tech-support' }}>Soporte tecnico</option>
+                        <option value="Protective-serv" {{ 'selected' if occupation == 'Protective-serv' }}>Servicio de proteccion</option>
+                        <option value="Priv-house-serv" {{ 'selected' if occupation == 'Priv-house-serv' }}>Servicio domestico</option>
+                        <option value="Armed-Forces" {{ 'selected' if occupation == 'Armed-Forces' }}>Fuerzas armadas</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Horas por semana</label>
+                    <input type="number" name="hours_per_week" min="1" max="99" value="{{ hours_per_week if hours_per_week else 40 }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Sexo</label>
+                    <select name="sex" required>
+                        <option value="Male" {{ 'selected' if sex == 'Male' }}>Masculino</option>
+                        <option value="Female" {{ 'selected' if sex == 'Female' }}>Femenino</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Pais de origen</label>
+                    <select name="native_country" required>
+                        <option value="United-States" {{ 'selected' if native_country == 'United-States' }}>Estados Unidos</option>
+                        <option value="Mexico" {{ 'selected' if native_country == 'Mexico' }}>Mexico</option>
+                        <option value="Philippines" {{ 'selected' if native_country == 'Philippines' }}>Filipinas</option>
+                        <option value="Germany" {{ 'selected' if native_country == 'Germany' }}>Alemania</option>
+                        <option value="Canada" {{ 'selected' if native_country == 'Canada' }}>Canada</option>
+                        <option value="Puerto-Rico" {{ 'selected' if native_country == 'Puerto-Rico' }}>Puerto Rico</option>
+                        <option value="El-Salvador" {{ 'selected' if native_country == 'El-Salvador' }}>El Salvador</option>
+                        <option value="Cuba" {{ 'selected' if native_country == 'Cuba' }}>Cuba</option>
+                        <option value="Jamaica" {{ 'selected' if native_country == 'Jamaica' }}>Jamaica</option>
+                        <option value="Italy" {{ 'selected' if native_country == 'Italy' }}>Italia</option>
+                        <option value="India" {{ 'selected' if native_country == 'India' }}>India</option>
+                        <option value="Japan" {{ 'selected' if native_country == 'Japan' }}>Japon</option>
+                        <option value="China" {{ 'selected' if native_country == 'China' }}>China</option>
+                        <option value="South" {{ 'selected' if native_country == 'South' }}>Corea del Sur</option>
+                        <option value="England" {{ 'selected' if native_country == 'England' }}>Inglaterra</option>
+                        <option value="Colombia" {{ 'selected' if native_country == 'Colombia' }}>Colombia</option>
+                        <option value="Dominican-Republic" {{ 'selected' if native_country == 'Dominican-Republic' }}>Republica Dominicana</option>
+                        <option value="Haiti" {{ 'selected' if native_country == 'Haiti' }}>Haiti</option>
+                        <option value="Guatemala" {{ 'selected' if native_country == 'Guatemala' }}>Guatemala</option>
+                        <option value="Poland" {{ 'selected' if native_country == 'Poland' }}>Polonia</option>
+                        <option value="Taiwan" {{ 'selected' if native_country == 'Taiwan' }}>Taiwan</option>
+                        <option value="Iran" {{ 'selected' if native_country == 'Iran' }}>Iran</option>
+                        <option value="Peru" {{ 'selected' if native_country == 'Peru' }}>Peru</option>
+                        <option value="France" {{ 'selected' if native_country == 'France' }}>Francia</option>
+                        <option value="Ecuador" {{ 'selected' if native_country == 'Ecuador' }}>Ecuador</option>
+                        <option value="Nicaragua" {{ 'selected' if native_country == 'Nicaragua' }}>Nicaragua</option>
+                        <option value="Vietnam" {{ 'selected' if native_country == 'Vietnam' }}>Vietnam</option>
+                        <option value="Honduras" {{ 'selected' if native_country == 'Honduras' }}>Honduras</option>
+                        <option value="Thailand" {{ 'selected' if native_country == 'Thailand' }}>Tailandia</option>
+                        <option value="Greece" {{ 'selected' if native_country == 'Greece' }}>Grecia</option>
+                        <option value="Trinadad&Tobago" {{ 'selected' if native_country == 'Trinadad&Tobago' }}>Trinidad y Tobago</option>
+                        <option value="Portugal" {{ 'selected' if native_country == 'Portugal' }}>Portugal</option>
+                        <option value="Ireland" {{ 'selected' if native_country == 'Ireland' }}>Irlanda</option>
+                        <option value="Cambodia" {{ 'selected' if native_country == 'Cambodia' }}>Camboya</option>
+                        <option value="Hungary" {{ 'selected' if native_country == 'Hungary' }}>Hungria</option>
+                        <option value="Scotland" {{ 'selected' if native_country == 'Scotland' }}>Escocia</option>
+                        <option value="Holand-Netherlands" {{ 'selected' if native_country == 'Holand-Netherlands' }}>Paises Bajos</option>
+                    </select>
+                </div>
+
+                <button type="submit">Predecir Ingreso</button>
+            </form>
+        </div>
+
+        {% if result %}
+        <div class="result {{ status }}">
+            {{ result }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
