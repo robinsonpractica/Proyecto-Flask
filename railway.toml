@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt && python model.py"
 
 [deploy]
-startCommand = "streamlit run app_streamlit.py --server.port $PORT --server.address 0.0.0.0"
+startCommand = "gunicorn app:app"
