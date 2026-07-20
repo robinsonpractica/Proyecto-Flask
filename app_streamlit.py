@@ -1,8 +1,37 @@
 import streamlit as st
 import pandas as pd
-import joblib
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.neighbors import KNeighborsClassifier
 
-model = joblib.load('model.pkl')
+@st.cache_resource
+def load_model():
+    df = pd.read_csv("adult-census-income.csv")
+    df.replace("?", pd.NA, inplace=True)
+    df.dropna(inplace=True)
+    df['income'] = df['income'].str.strip()
+    df['high_income'] = df['income'].apply(lambda x: 1 if x == '>50K' else 0)
+
+    features = ['age', 'education', 'marital.status', 'occupation', 'hours.per.week', 'sex', 'native.country']
+    X = df[features]
+    y = df['high_income']
+
+    preprocessor = ColumnTransformer(
+        transformers=[
+            ("num", StandardScaler(), ['age', 'hours.per.week']),
+            ("cat", OneHotEncoder(handle_unknown='ignore'), ['education', 'marital.status', 'occupation', 'sex', 'native.country']),
+        ]
+    )
+
+    model = Pipeline(steps=[
+        ('preprocessor', preprocessor),
+        ('classifier', KNeighborsClassifier(n_neighbors=40))
+    ])
+    model.fit(X, y)
+    return model
+
+model = load_model()
 
 st.title("Predictor de Ingresos Anuales")
 st.markdown("Basado en datos del Censo de EE.UU. - Modelo KNN")
